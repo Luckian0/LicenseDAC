@@ -1,0 +1,1 @@
+Artistic License|||The intent of this document is to state the conditions under which|||You are always permitted to make arrangements wholly outside of this|||Artistic-|||as Perl itself

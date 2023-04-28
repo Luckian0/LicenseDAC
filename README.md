@@ -1,33 +1,38 @@
 
 # LicenseDAC
 
-LicenseDAC offers an advanced search in files and archives to detect all the licenses that apply in the respective source code. With the help of the GUI interface, it is very easy to read the result. Also detect the primary programming language and the release date.
+
+LicenseDAC offers an advanced search in files and archives to detect all the licenses that apply in the respective source code. With the help of the GUI interface, it is very easy to read the result.
+
+
 
 
 ## Getting it
+LicenseDAC requires [Python 3.10.0](https://www.python.org/ftp/python/3.10.0/python-3.10.0-amd64.exe) or newer versions.
 
-LicenseDAC requires Python 3 or newer versions.
 Use ```deep_translator``` to help translate text, so please install it.
 ```pip install -U deep-translator```
+
 Also, please install the following patch:
+
 ```pip install pygments``` for detecting programming languages
 
-
+```pip install sv_ttk``` for 
 ## Getting Started
 
 Here is a very simple tutorial of how you can use this app.
 
 By pressing the ```Select zip``` button, an explorer window will open where you can select the desired file (it can be in the following formats: .zip; .tar.gz; .tar.bz2, etc.), after selection you will be automatically initiates the unzipping process followed by the searching process
 
-If a format is not supported (ex: ```source.jar```), a log message will appear informing you that the source code must be unzipped manually.
+If a format is not supported (ex: ```src.rpm```), a log message will appear informing you that the source code must be unzipped manually.
 
 If you want to search in a source code that is already unzipped on your device, all you have to do is use the ```Select Directory``` button to load the file and then the ```License Search``` button to start the search.
 
 The selected folder is displayed in the field below the search buttons.
 
-Under this field, you can follow the search process, which appears as a LOG-type message. After the search is completed, the message Done will appear, and below this field will appear the licenses found after your search. By clicking on a ```license button``` in the field above, the files in which the respective license was found will appear. Double-click on the ```desired file``` to open in the window on the right, where you can see how many times the respective license was found in that file through the ```buttons``` that appear on the bottom of the screen and are numbered from ```1``` to ```-n```; clicking on one of the ```buttons``` will focus on the line where the license was found.
+Under this field, you can follow the search process, which appears as a LOG-type message. After the search is completed, the message Done will appear, and to the right of this field will appear the licenses found after the search. By clicking on a ```license button``` in the field above, the files in which the respective license was found will appear. Double-click on the ```desired file``` to open in the window what is at the bottom, where you can see how many times the respective license was found in that file through the ```buttons``` that appear on the right side of the text window and are numbered from ```1``` to ```-n```; clicking on one of the ```buttons``` will focus on the line where the license was found.
 
-At the bottom, under the text, if there is another license in that file apart from the selected one, the other licenses will appear in the form of ```buttons```. Clicking on one of those ```buttons``` below will show how many times that additional license was found in that file. Click on one of the ```numbers``` to focus on the line where that hint appears.
+If there is another license in that file apart from the selected one, the other licenses will appear in the form of ```buttons```. Clicking on one of those ```buttons``` below will show how many times that additional license was found in that file. Click on one of the ```numbers``` to focus on the line where that hint appears.
 
 In the window in which the file opens, you can do the following by right-clicking the mouse:
 - Opening the selected links (you have to select the link and then press the right click followed by choosing the option ```Open URL```).
@@ -36,21 +41,20 @@ In the window in which the file opens, you can do the following by right-clickin
 - Search in the open file (by pressing the ```Find``` button or the ```Ctrl. + F``` buttons on the keyboard, a window will appear from which you can search for the desired word; you also have the option ```Ignore Case```
 - The ```Search``` option will open a Google page in your browser and search for the selected phrase.
 - The ```Open File``` function will open the respective file in the Notepad application.
+- The ```Clear``` option will clean the text window, or you can press ```Ctrl + n``` on your keyboard to remove all items from the window
 
-## Contributing
+Using the Info button that is in the upper right corner will display this file (README.md)
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+The release date is calculated according to the date on which the files were modified. All data are stored in a pool from which the last change is extracted (it must be older than two days).
 
-Please make sure to update tests as appropriate.
 
 
 ## Feedback
 
-If you have any feedback, please reach out to me at FlorinelBejinaru@Gmail.com
 
-
+📫 You can reach me: [FlorinelBejinaru@Gmail.com](mailto:FlorinelBejinaru@Gmail.com)
 ## License and Copyright
 
 LicenseDAC is copyright © Florinel Bejinaru 
-It is licensed under GPL v3.
 
+It is licensed under [GPL v3](LICENSE). 

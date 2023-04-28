@@ -1,27 +1,30 @@
-from tkinter import END, Menu, filedialog, messagebox
+from tkinter import END, Menu, filedialog, messagebox, ttk
+from pygments.lexers import get_lexer_for_filename
 from tkinter.scrolledtext import ScrolledText
 from deep_translator import GoogleTranslator
+from datetime import datetime, timedelta
 from idlelib.tooltip import Hovertip
 from collections import Counter
+import tkinter.font as tkFont
 from threading import Timer
+from pathlib import Path
 from typing import Any
-from datetime import datetime, timedelta
 from fisier import *
 import tkinter as tk
 import webbrowser
 import subprocess
+import sv_ttk
+import zipfile
 import random
 import shutil
-from pathlib import Path
 import time
-import zipfile
 import re
 import os
-from pygments.lexers import get_lexer_for_filename
+
 
 # define variables
 
-version_number = "v0.9"
+version_number = "v1.0"
 license_selected = ''
 wordlist_big = []
 dirname: str | bytes | Any = os.path.dirname(__file__)
@@ -56,6 +59,8 @@ time_list = []
 # Clear all
 
 def clear_other():
+    clear_page()
+    other_text['image'] = ''
     destroy_focus_buttons()
     destroy_other_focus()
     destroy_other()
@@ -69,8 +74,6 @@ def clear_all():
         release_label['text'] = ''
         lic_click = ''
         listbox.delete(0, tk.END)
-        text_dialog.delete("1.0", tk.END)
-        destroy_buttons()
         allPath.clear()
         wordlist_big.clear()
         files_w.clear()
@@ -78,6 +81,7 @@ def clear_all():
         license_list.clear()
         dic_MIT2.clear()
         main_dictionary.clear()
+        destroy_buttons()
         clear_other()
     except:
         pass
@@ -89,20 +93,20 @@ def browse_button():
     """Button will open a window for directory selection"""
     global folder_path
     clear_all()
+    logo_label['image']=''
     selected_directory = filedialog.askdirectory()
     folder_path.set(selected_directory)
-    window.title('-> ' + version_number + ' <--> LicenseDAC <-----< ' + selected_directory.split('/')[-1] + ' >--')
 
 
 # For open the Archive path
 
 def browse_zip():
     global folder_path, select_zip
+    logo_label['image']=''
     shutil.rmtree(main_folder, ignore_errors=True, onerror=None)
     select_zip = filedialog.askopenfilename(initialdir="C:/Users/" + os.getlogin() + "/Downloads", title="Select file",
                                             filetypes=(("tar.gz, .zip", "*"), ("all files", "*.*")))
     folder_path.set(main_folder)
-    window.title('-> ' + version_number + ' <--> LicenseDAC <-----< ' + select_zip.split('/')[-1] + ' >--')
     listbox.insert(tk.END, "                    !!!!!! Start unzipped !!!!!!")
     print(select_zip.split('/')[-1])
     dezarhivare()
@@ -112,20 +116,20 @@ def browse_zip():
 
 def open_file():
     global file_current
+    try:
+        clear_other()
+    except:
+        pass
     select_file2 = filedialog.askopenfilename(initialdir="C:/Users/" + os.getlogin() + "/Downloads/test",
                                               title="Select file", filetypes=(("*.*, *.*", "*"), ("all files", "*.*")))
     if len(select_file2) >= 1:
-        text_dialog.delete("1.0", tk.END)
+        clear_page()
         license_label['text'] = ''
         file_label['text'] = 'file: '+select_file2
         text_file = open(select_file2, encoding='utf-8')
         stuff = text_file.read()
         text_dialog.insert(END, stuff)
         file_current = select_file2
-        try:
-            clear_other()
-        except:
-            pass
 
 
 # Click on the files in lisbox
@@ -135,7 +139,6 @@ def on_text_click(file_current):
     other_btn_list = []
     linie = []
     clear_other()
-    text_dialog.delete("1.0", tk.END)
     str_file = file_current
     for aa in license_list:
         if str_file in aa:
@@ -149,7 +152,8 @@ def on_text_click(file_current):
         stuff = text_file.read()
         text_dialog.insert(END, stuff)
     open_text()
-    text_dialog.tag_configure('highlighted', background='yellow')
+    text_dialog.tag_configure('highlighted', background='#4bfb48')
+
     for element in linie:
         el1 = str(1 + int(element)) + '.0'
         el2 = str(1 + int(element)) + '.end'
@@ -162,12 +166,12 @@ def on_text_click(file_current):
     def def_focus():
         global focus_bt
         for i, item in enumerate(focus_btn):
-            if i >= 17:
-                x = 785
-                y = (i - 17) * 30 + 80
+            if i >= 13:
+                x = 930
+                y = (i - 13) * 30 + 295
             else:
-                x = 745
-                y = i * 30 + 80
+                x = 890
+                y = i * 30 + 295
             culori = str("#" + ''.join([random.choice('ABCDEF0123456789') for i in range(6)]))
             focus_bt = tk.Button(window, text='  '+str(i+1)+'  ', command=lambda line=item: focus_on_line(line), bg=culori)
             focus_bt.pack()
@@ -213,12 +217,15 @@ def destroy_other_focus():
 def search_all_license():
     language_list = []
     time_list = []
-    global allPath
+    global allPath, prog_lang, prog_lang_list
     clear_all()
     listbox.insert(tk.END, "           !!!!!! Start looking for licenses !!!!!!")
     with open(os.path.join(dirname, "license_txt/license_txt.txt")) as f:
         for line in f:
             license_txt = line.strip().split('|||')
+    with open(os.path.join(dirname, "exceptions/Language.txt")) as f:
+        for line in f:
+            ex_lang = line.strip().split('|||')
     license_path = folder_path.get()
 
     # Loop through all files and search for licenses, line by line.
@@ -248,7 +255,10 @@ def search_all_license():
                 else:
                     pass
                 lexer = str(get_lexer_for_filename(file)).split('.')[-1].split('Lexer')[0]
-                language_list.append(lexer)
+                if lexer in ex_lang:
+                    pass
+                else:
+                    language_list.append(lexer)
 
             except IOError as ex:
                 words = f"."
@@ -262,12 +272,17 @@ def search_all_license():
     dates = [datetime.strptime(date_str, '%Y-%m-%d').date() for date_str in time_list1]
     try:
         max_date = max(dates).strftime('%Y-%m-%d')
-        release_label['text'] = f" Release date: {max_date}"
+        release_label['text'] = f"Release date: {max_date}"
     except:
-        release_label['text'] = f" Release date: N/A"
+        release_label['text'] = f"Release date: N/A"
 
-    programming_language_list = Counter(language_list)
-    language_label['text'] = f" Programming language: {programming_language_list.most_common(1)[0][0]}"
+    try:
+        programming_language_list = Counter(language_list)
+        prog_lang_list = [(key + ":" + str(value)) for key, value in programming_language_list.items()]
+        prog_lang = programming_language_list.most_common(1)[0][0]
+        language_label['text'] = f"Programming language: {prog_lang}"
+    except:
+        language_label['text'] = f"Programming language: N/A"
 
     allPath = list(set(allPath))
     for a in allPath:
@@ -286,6 +301,11 @@ def search_all_license():
     license_MPL()
     license_EULA()
     license_CDDL()
+    license_PostgreSQL()
+    license_Aladdin()
+    license_X11()
+    license_Json()
+    license_CLA()
     license_Artistic()
     license_Elastic()
     license_Python()
@@ -299,12 +319,16 @@ def search_all_license():
 
 def all_buttons2():
     for i, item in enumerate(list_buttons):
-        if i >= 12:
-            x = 140
-            y = (i - 12) * 30 + 290
+        if i >= 14:
+            x = 960
+            y = (i - 14) * 30 + 80
         else:
-            x = 10
-            y = i * 30 + 290
+            if i >= 7:
+                x = 880
+                y = (i - 7) * 30 + 80
+            else:
+                x = 800
+                y = i * 30 + 80
         button = tk.Button(window, text=item, command=lambda text=item: on_button_click(text), bg='#6ce3e5')
         button.pack()
         button.place(x=x, y=y)
@@ -363,12 +387,12 @@ def on_other_click(text):
     def other_focus():
         global focus_other_nr
         for i, item in enumerate(focus_other):
-            if i >= 20:
-                x = (i - 20)*31 + 825
-                y = 535
+            if i >= 13:
+                x = 1220
+                y = (i-13) * 30 + 300
             else:
-                x = i * 30 + 825
-                y = 505
+                x = 1180 
+                y = i * 30 + 300
             culori = str("#" + ''.join([random.choice('ABCDEF0123456789') for i in range(6)]))
             focus_other_bt = tk.Button(window, text=' '+str(i+1)+' ', command=lambda line=item: focus_on_other(line), bg=culori)
             focus_other_bt.pack()
@@ -377,15 +401,25 @@ def on_other_click(text):
     other_focus()
 
 # Build other license buttons.
-def btn_others():
+def btn_others(): 
+    if other_btn_list:
+        img_others()
     other_btn_list.sort(key=len)
     for i, item in enumerate(other_btn_list):
-        other_button = tk.Button(window, text=item, command=lambda text=item: on_other_click(text), bg='#6ce3e5')
+        if i >= 13:
+            x = 1080
+            y = (i-13) * 30 + 300
+        else:
+            x = 1010 
+            y = i * 30 + 300
+        other_button = tk.Button(window, text=item, command=lambda text=item: on_other_click(text), bg='#4ee7b5')
         other_button.pack()
-        other_button.place(x=i*45 + 825, y=475)
+        other_button.place(x=x, y=y)
         other_nr.append(other_button)
 
+
 # Check for other license in file.
+
 def def_other_license(other_license):
     global v2_other
     v2_other = eval(str(other_license[0]))
@@ -409,10 +443,7 @@ def on_item_doubleclick(event):
     other_license.append(new_dict)
     print('mai exista si', other_license)
     if lic_click == 'Copyright':
-        destroy_other_focus()
-        destroy_other()
-        destroy_focus_buttons()
-        text_dialog.delete("1.0", tk.END)
+        clear_other()
         def open_text():
             try:
                 text_file = open(file_current, encoding='ANSI')
@@ -424,7 +455,7 @@ def on_item_doubleclick(event):
         for element in copyright_store:
             if file_current in element:
 
-                text_dialog.tag_configure('highlighted', background='yellow')
+                text_dialog.tag_configure('highlighted', background='#4bfb48')
                 text_dialog.tag_add('highlighted', f"{element.split('  ')[1]}.0", f"{element.split('  ')[1]}.end")
                 text_dialog.see(f"{element.split('  ')[1]}.0")
 
@@ -439,17 +470,30 @@ def probe_v2(license1, key, exceptions, ignore_case):
     listbox.delete(0, tk.END)
     listbox.insert(tk.END, "           !!!!!! Check for " + license1 + " licenses !!!!!!")
     global main_dictionary, dic_MIT2
+
     for file_location in allPath:
         if os.path.exists(file_location):
             def encoding():
                 for line_number, line in enumerate(file):
-                    # if any(x in line for x in key) and (exceptions is None or not any(ex in line for ex in exceptions)):
-                    if any(x in line for x in key):
-                        if license1 == 'Unknown':
-                            if line in Unknown_line:
-                                pass
+                    if ignore_case == True:
+                        if any(x.lower() in line.lower() for x in key):
+                            if license1 == 'Unknown':
+                                if any(e == line for e in Unknown_line):
+                                    print('merge')
+                                    pass
+                                else:
+                                    if any(e.lower() in line.lower() for e in exceptions):
+                                        pass
+                                    else:
+                                        if license1 not in list_buttons:
+                                            list_buttons.append(license1)
+                                        if license1 not in main_dictionary[file_location]:
+                                            main_dictionary[file_location][license1] = []
+                                            main_dictionary[file_location][license1].append(line_number)
+                                        else:
+                                            main_dictionary[file_location][license1].append(line_number)
                             else:
-                                if any(e in line for e in exceptions):
+                                if any(e.lower() in line.lower() for e in exceptions):
                                     pass
                                 else:
                                     if license1 not in list_buttons:
@@ -459,8 +503,9 @@ def probe_v2(license1, key, exceptions, ignore_case):
                                         main_dictionary[file_location][license1].append(line_number)
                                     else:
                                         main_dictionary[file_location][license1].append(line_number)
-                        else:
-                            if any(e in line for e in exceptions):
+                    else:
+                        if any(x in line for x in key):
+                            if any(e.lower() in line.lower() for e in exceptions):
                                 pass
                             else:
                                 if license1 not in list_buttons:
@@ -476,14 +521,12 @@ def probe_v2(license1, key, exceptions, ignore_case):
             except:
                 with open(file_location, 'r', encoding='utf-8') as file:
                     encoding()
-
     dic_MIT2 = {k: v for k, v in main_dictionary.items() if v}
     list_buttons.sort(key=len)
     return dic_MIT2
 
 
-dirname = os.path.dirname(__file__)
-
+# Defined licenses
 
 def license_MIT():
     with open(os.path.join(dirname, "license_txt/MIT_txt.txt")) as f:
@@ -724,6 +767,66 @@ def license_CDDL():
     probe_v2(license1, key, exceptions, ignore_case)
 
 
+def license_PostgreSQL():
+    with open(os.path.join(dirname, "exceptions/PostgreSQL.txt")) as f:
+        for line in f:
+            exceptions = line.strip().split('|||')
+    with open(os.path.join(dirname, "license_txt/PostgreSQL_txt.txt")) as f:
+        for line in f:
+            key = line.strip().split('|||')
+    license1 = "PostgreSQL"
+    ignore_case = False
+    probe_v2(license1, key, exceptions, ignore_case)
+
+
+def license_Aladdin():
+    with open(os.path.join(dirname, "exceptions/Aladdin.txt")) as f:
+        for line in f:
+            exceptions = line.strip().split('|||')
+    with open(os.path.join(dirname, "license_txt/Aladdin_txt.txt")) as f:
+        for line in f:
+            key = line.strip().split('|||')
+    license1 = "Aladdin"
+    ignore_case = False
+    probe_v2(license1, key, exceptions, ignore_case)
+
+
+def license_X11():
+    with open(os.path.join(dirname, "exceptions/X11.txt")) as f:
+        for line in f:
+            exceptions = line.strip().split('|||')
+    with open(os.path.join(dirname, "license_txt/X11_txt.txt")) as f:
+        for line in f:
+            key = line.strip().split('|||')
+    license1 = "X11"
+    ignore_case = False
+    probe_v2(license1, key, exceptions, ignore_case)
+
+
+def license_Json():
+    with open(os.path.join(dirname, "exceptions/Json.txt")) as f:
+        for line in f:
+            exceptions = line.strip().split('|||')
+    with open(os.path.join(dirname, "license_txt/Json_txt.txt")) as f:
+        for line in f:
+            key = line.strip().split('|||')
+    license1 = "Json"
+    ignore_case = False
+    probe_v2(license1, key, exceptions, ignore_case)
+
+
+def license_CLA():
+    with open(os.path.join(dirname, "exceptions/CLA.txt")) as f:
+        for line in f:
+            exceptions = line.strip().split('|||')
+    with open(os.path.join(dirname, "license_txt/CLA_txt.txt")) as f:
+        for line in f:
+            key = line.strip().split('|||')
+    license1 = "CLA"
+    ignore_case = False
+    probe_v2(license1, key, exceptions, ignore_case)
+
+
 def license_Unknown():
     global Unknown_line
     with open(os.path.join(dirname, "exceptions/Unknown.txt")) as f:
@@ -749,9 +852,11 @@ def license_Unknown():
 def copyright_check():
     listbox.delete(0, tk.END)
     global lic_click, copyright_store
-    copy = ['Copyright', '©']
+    copy = ['Copyright', '© ']
+    clear_other()
     copyright_listbox = []
     copyright_store = []
+    copyright_page = []
     lic_click = 'Copyright'
     with open(os.path.join(dirname, "exceptions/Copyright.txt")) as f:
         for line in f:
@@ -768,15 +873,23 @@ def copyright_check():
                                 pass
                             else:
                                 copyright_store.append(f"{file_location}  {line_number + 1}")
+                                copyright_page.append(line)
             try:
                 with open(file_location, 'r', encoding='ANSI') as file:
                     encoding()
             except:
                 with open(file_location, 'r', encoding='utf-8') as file:
                     encoding()
-    for element in copyright_store:
-        listbox.insert(tk.END, element.split('  ')[0])
-    license_label['text'] = 'License: '+lic_click
+    copyright_page = list(set(copyright_page))
+    for lines in copyright_page:
+        text_dialog.insert("end", lines)
+    if len(copyright_store) <= 0:
+        text_dialog.insert("1.0", "\n                !!!!!! Nothing To Display !!!!!!")
+        window.bell()
+    else:
+        for element in copyright_store:
+            listbox.insert(tk.END, element.split('  ')[0])
+    license_label['text'] = f'License: {lic_click}'
     print(copyright_listbox)
 
 
@@ -829,11 +942,26 @@ def manually_check():
 
 # unZip
 
+def extract_zip(select_zip, main_folder):
+    with zipfile.ZipFile(select_zip, 'r') as zip_ref:
+        for info in zip_ref.infolist():
+            zip_ref.extract(info, main_folder)
+            extracted_file_path = os.path.join(main_folder, info.filename)
+            modified_time = datetime(*info.date_time)
+            os.utime(extracted_file_path, (os.stat(extracted_file_path).st_atime, 
+                                           modified_time.timestamp()))
+    
+    listbox.insert(tk.END, "                !!!!!! finished unzipped.... !!!!!!")
+    search_files2()
+
 def dezarhivare():
-    try:
-        dezarhivare3()
-    except:
-        listbox.insert(tk.END, "            !!!!!! ERROR, please unzip manually !!!!!!")
+    if select_zip.endswith('.zip') or select_zip.endswith('.jar'):
+        extract_zip(select_zip, main_folder)
+    else:
+        try:
+            dezarhivare3()
+        except:
+            listbox.insert(tk.END, "            !!!!!! ERROR, please unzip manually !!!!!!")
 
 def dezarhivare3():
     shutil.unpack_archive(select_zip, main_folder)
@@ -853,6 +981,38 @@ def search_files2():
     after_time.start() 
 
 
+# Programming language 
+
+def ignore_lang():
+    if messagebox.askokcancel('Add exception', f'This language: "{prog_lang}", will be ignored in the future'):
+        exception_files = open(os.path.join(dirname, "exceptions/Language.txt"), "a")
+        exception_files.write("|||")
+        exception_files.write(prog_lang)
+
+def all_languages():
+    top = tk.Toplevel(window)
+    top.geometry("127x150")
+    top.iconphoto(False, icon_title)
+    screen_width = top.winfo_screenwidth()
+    screen_height = top.winfo_screenheight()
+    x = int((screen_width/2) - (300/2))
+    y = int((screen_height/2) - (200/2))
+    top.geometry("+{}+{}".format(x, y))
+    top.bind('<FocusOut>', lambda event: top.destroy())
+    listbox_lg = tk.Listbox(top, width=17 ,height="8")
+    listbox_lg.pack()
+    listbox_lg.place(x=10,y=10)
+    prog_lang_list.sort(key=lambda x: int(x.split(':')[1]), reverse=True) 
+    for a in prog_lang_list:
+        listbox_lg.insert(tk.END, a)
+
+def language_popup_menu(event):
+    popup = tk.Menu(window, tearoff=0)
+    popup.add_command(label="Ignore", command= ignore_lang)
+    popup.add_command(label="Check All", command= all_languages)
+    popup.tk_popup(event.x_root, event.y_root)
+
+    
 # Persistent Curations
 
 def add_text_exception():
@@ -963,7 +1123,7 @@ def open_notepad():
 
 def open_readme():
     global file_current
-    text_dialog.delete("1.0", tk.END)
+    clear_other()
     language_label['text'] = ''
     license_label['text'] = ''
     file_label['text'] = 'README.md'
@@ -971,12 +1131,7 @@ def open_readme():
     stuff = text_file.read()
     text_dialog.insert(END, stuff)
     file_current = dirname + "\README.md"
-    try:
-        destroy_focus_buttons()
-        destroy_other()
-        destroy_other_focus()
-    except:
-        pass
+
 
 def google_search():
     if text_dialog.tag_ranges('sel'):
@@ -994,7 +1149,7 @@ def translate_text():
         selection_start = text_dialog.index('sel.first')
         selection_end = text_dialog.index('sel.last')
         to_translate = text_dialog.selection_get()
-        translated = GoogleTranslator(source='auto', target=var_language.get()).translate(to_translate)
+        translated = GoogleTranslator(source='auto', target=set_language.get()).translate(to_translate)
         text_dialog.delete(selection_start, selection_end)
         text_dialog.insert(selection_start, translated)
         text_dialog.tag_add('green', selection_start, f"{selection_start}+{len(translated)}c")
@@ -1003,26 +1158,35 @@ def translate_text():
         messagebox.showinfo("Translate", "you have to select the text first")
 
 
-# tKinter script
 
+# tKinter script
 window = tk.Tk()
-window.geometry("1760x650")
-window.title('-> ' + version_number + ' <--> LicenseDAC <-------------------------->')
+
+window.geometry("1270x725")
+window.config(bg='#f8fcfa')
+
+window.title(f' {version_number}    LicenseDAC ')
+custom_font = tkFont.Font(family="Helvetica", size=10, weight="bold")
+icon_title = tk.PhotoImage( file= dirname + "\img\\icon.png")
+window.iconphoto(False, icon_title)
 
 # Button to select directory.
-select_directory = tk.Button(window, text="Select Directory", bg='#800020', fg='white', border=0, command=browse_button)
+button_select_directory = tk.PhotoImage( file= dirname + "\img\\button_select-directory.png")
+select_directory = tk.Button(window, image=button_select_directory, border=0, activebackground='#f8fcfa' , command=browse_button)
 select_directory.pack()
 myTip = Hovertip(select_directory, 'Choose your package. Must be unarchived')
 
 # Button to select archive file.
-select_zip = tk.Button(window, text="Select zip  ", bg='#800020', fg='white', border=0, command=browse_zip)
+button_select_zip = tk.PhotoImage( file= dirname + "\img\\button_select-zip.png")
+select_zip = tk.Button(window, image=button_select_zip, border=0, activebackground='#f8fcfa' , command=browse_zip)
 select_zip.pack()
 myTip = Hovertip(select_zip, 'Choose your zip file')
 
 # Button to check the Copyright.
-copyright_bt = tk.Button(window, text="Copyright", bg='#800020', fg='white', border=0, command=copyright_check)
+button_copyright = tk.PhotoImage( file= dirname + "\img\\button_copyright.png")
+copyright_bt = tk.Button(window, image=button_copyright, border=0, activebackground='#f8fcfa', command=copyright_check)
 copyright_bt.pack()
-myTip = Hovertip(copyright_bt, 'Check for Copyright')
+myTip = Hovertip(copyright_bt, 'Check for Copyright', )
 
 # Label to store chosen directory.
 folder_path = tk.StringVar()
@@ -1030,7 +1194,8 @@ directory_label = tk.Label(window, textvariable=folder_path, bg="#D3D3D3", width
 directory_label.pack()
 
 # Button to run main script.
-go_button = tk.Button(window, text="License   search", bg='#800020', fg='white', border=0, command=search_files2)
+button_license_search = tk.PhotoImage( file= dirname + "\img\\button_license-search.png")
+go_button = tk.Button(window, image=button_license_search, border=0, activebackground='#f8fcfa', command=search_files2)
 go_button.pack()
 myTip = Hovertip(go_button, 'Search on the selected folder')
 
@@ -1039,100 +1204,128 @@ manually_entry = tk.Entry(window, width=20)
 manually_entry.pack()
 
 # Button to open the donation link.
-thanks_button = tk.Button(window, text = "Thanks!!", bg='#800020', fg='white', border=0, command=appreciate)
+thanks = tk.PhotoImage( file= dirname + "\img\\thanks.png")
+thanks_button = tk.Button(window, image=thanks, border=0, activebackground='#f8fcfa', command=appreciate)
 thanks_button.pack()
 myTip = Hovertip(thanks_button, 'Support this project')
 
 # Check button to turn ignore case on/off.
 var1 = tk.IntVar()
-stringCase_select = tk.Checkbutton(window, text='Ignore Case', variable=var1, onvalue=1, offvalue=0)
+stringCase_select = tk.Checkbutton(window, text='Ignore Case', activebackground='#f8fcfa', variable=var1, onvalue=1, offvalue=0)
 stringCase_select.pack()
 
 # Label for Copyright
-copyright_my = tk.Message(window, text="@copyright 2022 by Florinel Bejinaru!", relief=RAISED, width=220)
+copyright_by = tk.PhotoImage( file= dirname + "\img\\copyright-by.png")
+copyright_my = tk.Label(window, image=copyright_by)
 copyright_my.pack()
 
 # Button to check the files
-open_a_file = tk.Button(window, text="Open file  ", bg='#800020', fg='white', border=0, command=open_file)
+button_open_file = tk.PhotoImage( file= dirname + "\img\\button_open-file.png")
+open_a_file = tk.Button(window, image=button_open_file, border=0, activebackground='#f8fcfa', command=open_file)
 open_a_file.pack()
 myTip = Hovertip(open_a_file, 'Open a specific file')
 
 # Button to manually check
-manually_button = tk.Button(window, text = "Check for:", bg='#800020', fg='white', border=0, command=manually_check)
+button_check_for = tk.PhotoImage( file= dirname + "\img\\button_check-for.png")
+manually_button = tk.Button(window, image=button_check_for, border=0, activebackground='#f8fcfa', command=manually_check)
 manually_button.pack()
 myTip = Hovertip(manually_button, 'Check for a specific string')
 
 # Text Dialog
-text_dialog = ScrolledText(window, width=105, borderwidth=2, relief="sunken", padx=20)
+text_dialog = ScrolledText(window, width=100, relief="sunken", padx=20)
 text_dialog.pack(side="left")
-text_dialog.place(x=825, y=80)
 
 # Label Programming Language
-release_label = tk.Label(window, text="")
+release_label = tk.Label(window, text="", font=custom_font)
 release_label.pack()
 
 # Label Programming Language
-language_label = tk.Label(window, text="")
+language_label = tk.Label(window, text="", font=custom_font)
 language_label.pack()
+language_label.bind("<Button-3>", language_popup_menu)
 
 # Label license
-license_label = tk.Label(window, text="")
+license_label = tk.Label(window, text="", font=custom_font)
 license_label.pack()
 
 # Label file
-file_label = tk.Label(window, text="")
+file_label = tk.Label(window, text="", font=custom_font)
 file_label.pack()
 
+# Image other licenses
+img_other = tk.PhotoImage( file= dirname + "\img\\other_txt.png")
+other_text = tk.Label(window)
+other_text.pack()
+def img_others():
+    other_text['image'] = img_other
+
+# Label language
+img_language = tk.PhotoImage( file= dirname + "\img\\language.png")
+lg_label = tk.Label(window, image=img_language)
+lg_label.pack()
+
+# Load GIF
+my_logo = tk.PhotoImage( file= dirname + "\img\\my_logo.png")
+logo_label = tk.Label(window, image=my_logo)
+logo_label.pack()
+logo_label.place(x=880, y=1)
+
+
 # Help button
-img = tk.PhotoImage( file= dirname + "\img\help-icon.png")
+img = tk.PhotoImage( file= dirname + "\img\help-icon-v2.png")
 help_button = tk.Button(window, image=img, width=25, height=25, border=0, command=open_readme)
 myTip = Hovertip(help_button, 'Open README file')
 help_button.pack()
 
 # language
-var_language = tk.StringVar(window)
-var_language.set(option_language[0])
-set_language = tk.OptionMenu(window, var_language, *option_language)
-set_language.config(width=3, font=('Helvetica', 8), border=1.5)
+set_language = ttk.Combobox(window, values=option_language, width=4)
+set_language.current(0)
 myTip = Hovertip(set_language, 'Translate language')
 set_language.pack()
 
-scrollbar = tk.Scrollbar(window)
-listbox = tk.Listbox(window, width=117, yscrollcommand=scrollbar.set)
+frame_listbox = Frame(window)
+scrollbar = Scrollbar(frame_listbox, orient=VERTICAL)
+listbox = tk.Listbox(frame_listbox, width=117, yscrollcommand=scrollbar.set)
 listbox.bind("<Double-Button-1>", on_item_doubleclick)
 scrollbar.config(command=listbox.yview)
-listbox.config(yscrollcommand=scrollbar.set)
-scrollbar.pack()
+frame_listbox.pack()
+scrollbar.pack(side=RIGHT, fill=Y)
 listbox.pack(side=tk.LEFT)
+frame_listbox.place(x=20, y=120)
 
-listbox.place(x=20, y=120)
-scrollbar.place(x=725, y=120)
-directory_label.place(x=20, y=95)
-select_directory.place(x=110, y=30)
-thanks_button.place(x=780, y=590)
-go_button.place(x=110, y=60)
-stringCase_select.place(x=490, y=29)
-copyright_my.place(x=700, y=620)
-manually_entry.place(x=370, y=33)
-manually_button.place(x=300, y=30)
-select_zip.place(x=20, y=30)
-open_a_file.place(x=20, y=60)
-language_label.place(x=843, y=30)
-release_label.place(x=1050, y=30)
-license_label.place(x=1253, y=30)
-file_label.place(x=843, y=50)
-set_language.place(x=370, y=56)
-copyright_bt.place(x=300, y=60)
-help_button.place(x=1690, y=10)
+select_zip.place(x=20, y=5)
+open_a_file.place(x=20, y=40)
+select_directory.place(x=110, y=5)
+go_button.place(x=110, y=40)
+manually_button.place(x=240, y=5)
+copyright_bt.place(x=240, y=40)
+lg_label.place(x=330, y=40)
+text_dialog.place(x=20, y=295)
+
+thanks_button.place(x=1195, y=690)
+
+stringCase_select.place(x=440, y=7)
+copyright_my.place(x=600, y=690)
+manually_entry.place(x=340, y=11)
+directory_label.place(x=20, y=80)
+set_language.place(x=420, y=40)
+
+language_label.place(x=575, y=15)
+release_label.place(x=810, y=15)
+license_label.place(x=575, y=35)
+file_label.place(x=810, y=35)
+other_text.place(x=1000, y=260)
+
+help_button.place(x=1225, y=10)
 
 
 # Right Click Menu
 def my_popup(ef):
     my_menu.tk_popup(ef.x_root, ef.y_root)
 
-my_menu = Menu(window, tearoff=False, fg='#800020')
+my_menu = Menu(window, tearoff=False, bg='#f8fefb')
 text_dialog.bind('<Button-3>', my_popup)
-curationmenu = Menu(my_menu, tearoff=False)
+curationmenu = Menu(my_menu, tearoff=False, bg='#f8fefb')
 curationmenu.add_command(label="Add", command=persistent_curations)
 curationmenu.add_command(label="Check", command=check_license_curations)
 
@@ -1144,8 +1337,12 @@ my_menu.add_command(label='  Search ', command=google_search)
 my_menu.add_command(label='Open file', command=open_notepad)
 my_menu.add_command(label='  Clear  ', command=(lambda:text_dialog.delete("1.0", tk.END)))
 window.bind_class('Text', '<Control-f>', lambda event: search_inside(window, text_dialog))
+
 manually_entry.bind('<Return>', lambda x: manually_check())
 window.protocol('WM_DELETE_WINDOW', exit_button)
+window.bind_class('Text', '<Control-n>', lambda event: clear_all())
+
+sv_ttk.set_theme("light")
 
 ###################################
 

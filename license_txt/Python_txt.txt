@@ -1,1 +1,1 @@
-Python License|||Python was created in the early 1990s by Guido van Rossum at Stichting|||PSF-2.0|||Python-2.0|||Python Software Foundation License|||icense: Python
+Python License|||Python was created in the early 1990s by Guido van Rossum at Stichting|||PSF-2.0|||Python-2.0|||Python Software Foundation License|||license: Python

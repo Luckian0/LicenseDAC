@@ -1,1 +1,1 @@
-all end user license agreements |||end user license agreements (excluding distributors and resellers) which|||-accepteula|||a EULA resource|||The EULA content.
+all end user license agreements |||end user license agreements (excluding distributors and resellers) which|||-accepteula|||a EULA resource|||The EULA content.|||for when the EULA was accepted|||<p>The EULA ID.</p>|||collection of EULA acceptances|||list of EULA ID
